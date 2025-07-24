@@ -128,6 +128,18 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CaroGame.cpp" />
+    <ClCompile Include="game_controller.cpp" />
+    <ClCompile Include="game_logic.cpp" />
+    <ClCompile Include="main_client.cpp" />
+    <ClCompile Include="main_server.cpp" />
+    <ClCompile Include="socket_helper.cpp" />
+    <ClCompile Include="ui_console.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="game_controller.h" />
+    <ClInclude Include="game_logic.h" />
+    <ClInclude Include="socket_helper.h" />
+    <ClInclude Include="ui_console.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,0 +1,10 @@
+﻿  CaroGame.cpp
+  game_controller.cpp
+  game_logic.cpp
+  main_client.cpp
+  main_server.cpp
+D:\Workspace\ltm\CaroGame\CaroGame\main_server.cpp(14,7): warning C4101: 'buffer': unreferenced local variable
+  socket_helper.cpp
+  ui_console.cpp
+  Generating Code...
+  CaroGame.vcxproj -> D:\Workspace\ltm\CaroGame\x64\Debug\CaroGame.exe
