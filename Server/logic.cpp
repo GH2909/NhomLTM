@@ -1,5 +1,5 @@
 #include "game_logic.h"
-#include <iostream>  // Phải thêm để dùng std::cout
+#include <iostream>  
 
 GameLogic::GameLogic(int r, int c, int w)
     : rows(r), cols(c), winLength(w), board(r, std::vector<int>(c, 0)) {}

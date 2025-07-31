@@ -2,7 +2,7 @@
 #define GAME_LOGIC_H
 
 #include <vector>
-#include <iostream>  // phải có vì dùng cout trong printBoard
+#include <iostream>  
 
 class GameLogic {
 private:
@@ -16,7 +16,7 @@ public:
     bool makeMove(int player, int x, int y);
     int checkWin(int x, int y);
     bool isDraw();
-    void printBoard();  // Để public nha
+    void printBoard();  
 };
 
 #endif
