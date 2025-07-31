@@ -1,0 +1,20 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build with MSVC",
+      "type": "shell",
+      "command": "cl",
+      "args": [
+        "/EHsc",
+        "main.cpp",
+        "Data/StockData.cpp"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    }
+  ]
+}
