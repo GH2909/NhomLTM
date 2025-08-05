@@ -8,7 +8,7 @@
 </head>
 <body>
   <div class="container">
- <!-- Trang chủ -->
+    <!-- Trang chủ -->
     <div id="home" class="screen">
       <div class="home-content">
         <img src="assets/back.png" alt="Game Logo" class="logo">
@@ -16,37 +16,126 @@
       </div>
     </div>
 
+
     <!-- Bàn cờ -->
     <div id="board" class="screen hidden">
       <h1 class="title">Bàn cờ</h1>
       <div class="board-header">
         <div class="back-arrow" onclick="showHome()">←</div>
         <img src="assets/smile.png" alt="Smile" class="icon" onclick="resetBoard()">
+        <div id="status" style="margin-left: auto; font-size: 18px; color: #333;"></div>
       </div>
       <div class="grid" id="grid"></div>
     </div>
   </div>
 
+
   <script>
     const grid = document.getElementById('grid');
     const size = 15;
     let currentPlayer = 'X';
+    let myPlayer = null;
     let cells = [];
+    let gameOver = false; 
+
 
     function showBoard() {
       document.getElementById('home').classList.add('hidden');
       document.getElementById('board').classList.remove('hidden');
     }
 
+
     function showHome() {
       document.getElementById('board').classList.add('hidden');
       document.getElementById('home').classList.remove('hidden');
     }
 
+
     function resetBoard() {
       grid.innerHTML = '';
       createGrid();
+      currentPlayer = 'X';
+      gameOver = false; 
+      updateStatus();
     }
+
+const socket = new WebSocket("ws://localhost:8080");
+
+    socket.onopen = () => {
+      console.log("Đã kết nối tới bridge.js");
+    };
+
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+
+
+      if (data.info) {
+        console.log(data.info);
+        if (data.info.includes('X')) {
+          myPlayer = 'X';
+        } else if (data.info.includes('O')) {
+          myPlayer = 'O';
+        }
+        updateStatus();
+        return;
+      }
+
+
+      if (data.error) {
+        alert(data.error);
+        return;
+      }
+
+
+      if (data.type === "win") {
+        alert(`Người chơi ${data.winner} thắng!`);
+         gameOver = true;
+
+
+  // ⏱ Chờ 300ms để ô thứ 5 có thời gian hiển thị trước khi reset
+  setTimeout(() => {
+    resetBoard();
+  }, 300);
+        return;
+      }
+
+
+      if (gameOver) return; 
+
+
+      const { row, col, player } = data;
+      const cell = document.querySelector(`[data-row='${row}'][data-col='${col}']`);
+      if (cell && cell.textContent === '') {
+        cell.textContent = player;
+        cells[row][col] = player;
+        currentPlayer = player === 'X' ? 'O' : 'X';
+        updateStatus();
+      }
+    };
+
+
+    socket.onerror = (error) => {
+      console.error("WebSocket lỗi:", error);
+    };
+
+
+    socket.onclose = () => {
+      console.log("Mất kết nối tới bridge.js");
+    };
+
+
+    function updateStatus() {
+      const statusEl = document.getElementById('status');
+      if (!myPlayer) {
+        statusEl.textContent = 'Đang chờ gán vai trò...';
+      } else if (currentPlayer === myPlayer) {
+        statusEl.textContent = `Lượt của bạn (${myPlayer})`;
+      } else {
+        statusEl.textContent = `Đang chờ đối thủ (${currentPlayer})`;
+      }
+    }
+
 
     function createGrid() {
       cells = [];
@@ -59,16 +148,27 @@
           cell.dataset.col = col;
           cell.textContent = '';
           cell.addEventListener('click', () => {
-            if (cell.textContent === '') {
+            if (
+              !gameOver && 
+              cell.textContent === '' &&
+              currentPlayer === myPlayer &&
+              myPlayer !== null
+            ) {
               cell.textContent = currentPlayer;
               cells[row][col] = currentPlayer;
+
+
+              socket.send(JSON.stringify({ row, col, player: currentPlayer }));
+
+
               if (checkWin(row, col, currentPlayer)) {
-                setTimeout(() => {
-                  alert(`Người chơi ${currentPlayer} thắng!`);
-                  resetBoard();
-                }, 100);
+                gameOver = true; 
+                socket.send(JSON.stringify({ type: "win", winner: currentPlayer }));
+                //alert(`Người chơi ${currentPlayer} thắng!`);
+                //resetBoard();
               } else {
                 currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                updateStatus();
               }
             }
           });
@@ -78,18 +178,20 @@
       }
     }
 
+
     function checkWin(row, col, player) {
       const directions = [
-        { dr: 0, dc: 1 },   // ngang
-        { dr: 1, dc: 0 },   // dọc
-        { dr: 1, dc: 1 },   // chéo \
-        { dr: 1, dc: -1 },  // chéo /
+        { dr: 0, dc: 1 },
+        { dr: 1, dc: 0 },
+        { dr: 1, dc: 1 },
+        { dr: 1, dc: -1 },
       ];
+
 
       for (const { dr, dc } of directions) {
         let count = 1;
 
-        // Kiểm tra về phía âm
+
         let r = row - dr;
         let c = col - dc;
         while (r >= 0 && r < size && c >= 0 && c < size && cells[r][c] === player) {
@@ -98,7 +200,7 @@
           c -= dc;
         }
 
-        // Kiểm tra về phía dương
+
         r = row + dr;
         c = col + dc;
         while (r >= 0 && r < size && c >= 0 && c < size && cells[r][c] === player) {
@@ -107,12 +209,17 @@
           c += dc;
         }
 
+
         if (count >= 5) return true;
       }
       return false;
     }
 
+
     createGrid();
   </script>
 </body>
 </html>
+
+
+
