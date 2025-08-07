@@ -5,7 +5,10 @@
 #include <mutex>
 #include <chrono>
 #include <atomic>
+#include <windows.h> 
 #include "Data/StockData.h"
+#include <fcntl.h>
+#include <io.h>
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -46,7 +49,6 @@ void broadcastStockData() {
 void handleClient(SOCKET clientSocket) {
     cout << "[+] New client connected\n";
 
-    // Không làm gì nhiều ở đây, vì dữ liệu đã được broadcast định kỳ
     char buffer[256];
     while (true) {
         int ret = recv(clientSocket, buffer, sizeof(buffer), 0);
@@ -62,10 +64,11 @@ void handleClient(SOCKET clientSocket) {
 }
 
 
-// Hàm chính
 int main() {
     WSADATA wsaData;
     WSAStartup(MAKEWORD(2,2), &wsaData);
+    SetConsoleOutputCP(CP_UTF8);
+    _setmode(_fileno(stdout), _O_U16TEXT);
 
     SOCKET serverSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (serverSocket == INVALID_SOCKET) {
@@ -108,17 +111,3 @@ int main() {
 
     return 0;
 }
-
-// // ✅ HÀM TEST
-// void testOnlyStockDataWithoutClient() {
-//     while (true) {
-//         cout << stockData();
-//         this_thread::sleep_for(chrono::seconds(5)); // mỗi 5 giây in 1 lần
-//     }
-// }
-
-// int main() {
-//     cout << "=== SERVER DANG CHAY TAI CONG 9999 ===\n";
-//     testOnlyStockDataWithoutClient();  // Bỏ comment hàm này
-//     return 0;
-// }
