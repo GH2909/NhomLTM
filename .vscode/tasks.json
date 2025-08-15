@@ -1,20 +1,26 @@
 {
-  "version": "2.0.0",
-  "tasks": [
-    {
-      "label": "build with MSVC",
-      "type": "shell",
-      "command": "cl",
-      "args": [
-        "/EHsc",
-        "main.cpp",
-        "Data/StockData.cpp"
-      ],
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      },
-      "problemMatcher": []
-    }
-  ]
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build Server with g++",
+            "type": "shell",
+            "command": "C:/Users/HP/Downloads/winlibs-x86_64-posix-seh-gcc-15.1.0-mingw-w64ucrt-13.0.0-r2/mingw64/bin/g++.exe",
+            "args": [
+                "-fdiagnostics-color=always",
+                "-g",
+                "Server.cpp",
+                "Data/StockData.cpp",
+                "-o",
+                "server.exe",
+                "-lws2_32"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$gcc"
+            ]
+        }
+    ]
 }
