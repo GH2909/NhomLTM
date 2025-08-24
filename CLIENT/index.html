@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Ứng dụng Chứng khoán</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="stocks-page">
+  <header>
+    <h2>Ứng dụng Chứng khoán</h2>
+    <div class="actions">
+      <input type="text" id="searchBox" placeholder="Tìm mã hoặc tên cổ phiếu...">
+      <button onclick="window.location.href='login.html'">Đăng nhập</button>
+    </div>
+  </header>
+
+  <main class="dashboard">
+    <!-- Danh sách cổ phiếu -->
+    <aside class="sidebar">
+      <h3>Danh sách cổ phiếu</h3>
+      <div id="stockList" class="stock-list"></div>
+    </aside>
+
+    <!-- Biểu đồ + giá -->
+    <section class="chart-section">
+      <div class="stock-header">
+        <h3 id="chartCompany">-</h3>
+        <div class="price-info">
+          <span id="chartPrice">-</span>
+          <span id="chartChange">-</span>
+        </div>
+      </div>
+      <canvas id="priceChart"></canvas>
+    </section>
+
+    <!-- Thông tin chi tiết -->
+    <aside class="detail">
+      <h3>Thông tin chi tiết</h3>
+      <p><b>Tên công ty:</b> <span id="detailName">-</span></p>
+      <p><b>Mã:</b> <span id="detailCode">-</span></p>
+      <p><b>Giá:</b> <span id="detailPrice">-</span></p>
+      <p><b>Thay đổi:</b> <span id="detailChange">-</span></p>
+    </aside>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tạo công ty mới</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="header">
+    <h1>⚙️ Quản trị hệ thống</h1>
+    <nav>
+      <a href="index.html">Trang chứng khoán</a>
+      <a href="create.html">Tạo công ty</a>
+      <a href="login.html">Đăng nhập</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <h2>Tạo mã công ty mới</h2>
+    <form id="createForm">
+      <input type="text" id="code" placeholder="Mã công ty (VD: VNM)" required>
+      <input type="text" id="name" placeholder="Tên công ty" required>
+      <input type="number" id="price" placeholder="Giá cổ phiếu" required>
+      <button type="submit" class="btn-login">Thêm công ty</button>
+    </form>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
