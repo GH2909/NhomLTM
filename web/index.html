@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Chứng khoán Dashboard</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; }
+    header { background: #222; color: #fff; padding: 10px; text-align: center; }
+    .container { display: grid; grid-template-columns: 1fr 2fr 1fr; height: calc(100vh - 50px); }
+    .col { padding: 15px; border-right: 1px solid #ddd; overflow-y: auto; }
+    .col:last-child { border-right: none; }
+    h2 { margin-top: 0; }
+    ul { list-style: none; padding: 0; }
+    li { padding: 8px; cursor: pointer; border-bottom: 1px solid #eee; }
+    li:hover { background: #f5f5f5; }
+    button { margin: 5px; padding: 8px 12px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <button id="login">Đăng nhập với Google</button>
+  <button id="logout" style="display:none;">Đăng xuất</button>
+  <span id="status" style="margin-left:20px;"></span>
+</header>
+
+<div class="container">
+  <!-- Cột trái -->
+  <div class="col" id="companyList">
+    <h2>Danh mục công ty</h2>
+    <input type="text" id="searchBox" placeholder="Tìm mã cổ phiếu..." style="width:100%;padding:6px;margin-bottom:10px;">
+    <button id="addCompanyBtn" style="display:none;">+ Thêm công ty</button>
+    <ul id="companyUl"></ul>
+  </div>
+
+  <!-- Cột giữa -->
+<div class="col">
+  <h2>Biểu đồ công ty</h2>
+  <div id="summaryTable"></div>
+  <canvas id="lineChart" style="display:none;"></canvas>
+</div>
+
+
+  <!-- Cột phải -->
+  <div class="col" id="companyDetails">
+    <h2>Chi tiết công ty</h2>
+    <div id="detailsContent">Chọn công ty để xem chi tiết...</div>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDd9MPrca93Of4iFjF9omVLoa7ZYQr4vII",
+  authDomain: "chungkhoan-ltm.firebaseapp.com",
+  projectId: "chungkhoan-ltm",
+  storageBucket: "chungkhoan-ltm.firebasestorage.app",
+  messagingSenderId: "547955791949",
+  appId: "1:547955791949:web:97048da7b96ae7ee176404",
+  measurementId: "G-E0TWY2LN7E"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+
+const loginBtn = document.getElementById("login");
+const logoutBtn = document.getElementById("logout");
+const status = document.getElementById("status");
+const addCompanyBtn = document.getElementById("addCompanyBtn");
+const companyUl = document.getElementById("companyUl");
+const detailsContent = document.getElementById("detailsContent");
+
+let chart;          // Biến lưu chart hiện tại
+let stocks = [];    // Danh sách cổ phiếu
+let history = {};   // Lịch sử giá từ server
+
+loginBtn.onclick = () => {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider);
+};
+logoutBtn.onclick = () => auth.signOut();
+
+auth.onAuthStateChanged(user => {
+  if (user) {
+    status.innerText = `Xin chào, ${user.displayName}`;
+    loginBtn.style.display = "none";
+    logoutBtn.style.display = "inline-block";
+    addCompanyBtn.style.display = "block";
+  } else {
+    status.innerText = "Bạn chưa đăng nhập";
+    loginBtn.style.display = "inline-block";
+    logoutBtn.style.display = "none";
+    addCompanyBtn.style.display = "none";
+  }
+});
+
+function renderSummaryTable() {
+  let html = `<table border="1" cellspacing="0" cellpadding="6" 
+                style="width:100%;border-collapse:collapse;text-align:center;">
+    <tr><th>Mã</th><th>Giá hiện tại</th><th>% thay đổi</th></tr>`;
+  
+  stocks.forEach(s => {
+    const d = history[s.code] || [];
+    let change = "N/A";
+    let color = "black";
+    if (d.length >= 2) {
+      const prev = d[d.length - 2].price;
+      const last = d[d.length - 1].price;
+      const percent = ((last - prev) / prev) * 100;
+      change = percent.toFixed(2) + "%";
+      color = percent >= 0 ? "green" : "red";
+    }
+    html += `<tr>
+              <td>${s.code}</td>
+              <td>${s.price.toFixed(2)}</td>
+              <td style="color:${color};font-weight:bold;">${change}</td>
+            </tr>`;
+  });
+  html += "</table>";
+  document.getElementById("summaryTable").innerHTML = html;
+}
+
+
+// Kết nối WebSocket
+const ws = new WebSocket("ws://localhost:3000");
+
+ws.onmessage = event => {
+  const data = JSON.parse(event.data);
+  stocks = data.stocks;
+  history = data.history;
+
+  // Cập nhật danh sách công ty
+  renderCompanies();
+
+  // Cập nhật bảng tổng hợp
+  renderSummaryTable();
+
+  // Nếu đang xem chart 1 công ty thì update liên tục
+  // Trong ws.onmessage
+if (currentCode) {
+  const d = history[currentCode] || [];
+  chart.data.labels = d.map(x => new Date(x.time).toLocaleTimeString());
+  chart.data.datasets[0].data = d.map(x => x.price);
+  chart.data.datasets[0].label = `Giá cổ phiếu ${currentCode}`;
+  chart.update();
+
+  // Lấy phần tử cuối (mới nhất)
+  const last = d[d.length - 1];
+  const prev = d.length >= 2 ? d[d.length - 2].price : null;
+let change = "N/A";
+let color = "black";
+if (last && prev) {
+  const percent = ((last.price - prev) / prev) * 100;
+  change = percent.toFixed(2) + "%";
+  color = percent >= 0 ? "green" : "red";
+}
+
+detailsContent.innerHTML =
+  `<p><b>Mã:</b> ${code}</p>
+   <p><b>Giá hiện tại:</b> ${last ? last.price.toFixed(2) : "N/A"}</p>
+   <p><b>% thay đổi:</b> <span style="color:${color};font-weight:bold;">${change}</span></p>
+   <p><b>Thời gian:</b> ${last ? new Date(last.time).toLocaleString("vi-VN") : "N/A"}</p>`;
+
+  }
+
+
+};
+
+
+
+const searchBox = document.getElementById("searchBox");
+
+function renderCompanies() {
+  companyUl.innerHTML = "";
+  const keyword = searchBox.value.trim().toUpperCase();
+
+  stocks
+    .filter(stock => stock.code.toUpperCase().includes(keyword))
+    .forEach(stock => {
+      const li = document.createElement("li");
+      li.textContent = stock.code;
+      li.onclick = () => showCompanyChart(stock.code);
+      companyUl.appendChild(li);
+    });
+}
+
+// Bắt sự kiện khi gõ tìm kiếm
+searchBox.addEventListener("input", renderCompanies);
+
+
+let currentCode = null; // mã đang hiển thị chart
+
+function showCompanyChart(code) {
+  currentCode = code;
+  document.getElementById("summaryTable").style.display = "none";
+  document.getElementById("lineChart").style.display = "block";
+
+  const d = history[code] || [];
+const labels = d.map(x => new Date(x.time).toLocaleTimeString());
+const prices = d.map(x => x.price);
+
+const last = d[d.length - 1];
+const prev = d.length >= 2 ? d[d.length - 2].price : null;
+let change = "N/A";
+let color = "black";
+if (last && prev) {
+  const percent = ((last.price - prev) / prev) * 100;
+  change = percent.toFixed(2) + "%";
+  color = percent >= 0 ? "green" : "red";
+}
+
+detailsContent.innerHTML =
+  `<p><b>Mã:</b> ${code}</p>
+   <p><b>Giá hiện tại:</b> ${last ? last.price.toFixed(2) : "N/A"}</p>
+   <p><b>% thay đổi:</b> <span style="color:${color};font-weight:bold;">${change}</span></p>
+   <p><b>Thời gian:</b> ${last ? new Date(last.time).toLocaleString("vi-VN") : "N/A"}</p>`;
+
+  const priceS = d.map(x => x.price);
+const colorS = (d.length >= 2 && d[d.length - 1].price >= d[d.length - 2].price) ? "green" : "red";
+
+if (!chart) {
+  chart = new Chart(document.getElementById("lineChart"), {
+    type: "line",
+    data: { 
+      labels, 
+      datasets: [{ 
+        label: `Giá cổ phiếu ${code}`, 
+        data: priceS, 
+        borderColor: colorS, 
+        backgroundColor: colorS, 
+        tension: 0.3 
+      }] 
+    },
+    options: { responsive: true }
+  });
+} else {
+  chart.data.labels = labels;
+  chart.data.datasets[0].data = priceS;
+  chart.data.datasets[0].label = `Giá cổ phiếu ${code}`;
+  chart.data.datasets[0].borderColor = colorS;
+  chart.data.datasets[0].backgroundColor = colorS;
+  chart.update();
+}
+
+
+}
+
+
+
+document.querySelector("#companyList h2").onclick = () => {
+  currentCode = null;
+  document.getElementById("lineChart").style.display = "none";
+  document.getElementById("summaryTable").style.display = "block";
+  detailsContent.innerHTML = "Chọn công ty để xem chi tiết...";
+};
+
+
+// Thêm công ty (demo, chỉ gửi lên server)
+addCompanyBtn.onclick = () => {
+  const code = prompt("Nhập mã công ty:");
+  const price = prompt("Nhập giá ban đầu:");
+  if (code && price) {
+    ws.send(JSON.stringify({ action: "add", code, price: parseFloat(price) }));
+  }
+};
+
+</script>
+</body>
+</html>
