@@ -144,37 +144,38 @@ ws.onmessage = event => {
   renderSummaryTable();
 
   // Nếu đang xem chart 1 công ty thì update liên tục
-  // Trong ws.onmessage
-if (currentCode) {
-  const d = history[currentCode] || [];
-  const prices = d.map(x => x.price);
-const last = d[d.length - 1];
-const prev = d.length >= 2 ? d[d.length - 2].price : null;
+  if (currentCode) {
+    const d = history[currentCode] || [];
+    const prices = d.map(x => x.price);
 
-let colorS = "black";
-if (last && prev) {
-  colorS = last.price >= prev ? "green" : "red";
-}
+    // Lấy phần tử cuối (mới nhất)
+    const last = d[d.length - 1];
+    const prev = d.length >= 2 ? d[d.length - 2].price : null;
 
-chart.data.labels = d.map(x => new Date(x.time).toLocaleTimeString());
-chart.data.datasets[0].data = prices;
-chart.data.datasets[0].label = `Giá cổ phiếu ${currentCode}`;
-chart.data.datasets[0].borderColor = colorS;
-chart.data.datasets[0].backgroundColor = colorS;
-chart.update();
+    let change = "N/A";
+    let color = "black";
+    if (last && prev) {
+      const percent = ((last.price - prev) / prev) * 100;
+      change = percent.toFixed(2) + "%";
+      color = percent >= 0 ? "green" : "red";
+    }
 
+    // Update chart data + màu
+    chart.data.labels = d.map(x => new Date(x.time).toLocaleTimeString());
+    chart.data.datasets[0].data = prices;
+    chart.data.datasets[0].label = `Giá cổ phiếu ${currentCode}`;
+    chart.data.datasets[0].borderColor = color;
+    chart.data.datasets[0].backgroundColor = color;
+    chart.update();
 
-detailsContent.innerHTML =
-  `<p><b>Mã:</b> ${currentCode}</p>
-   <p><b>Giá hiện tại:</b> ${last ? last.price.toFixed(2) : "N/A"}</p>
-   <p><b>% thay đổi:</b> <span style="color:${color};font-weight:bold;">${change}</span></p>
-   <p><b>Thời gian:</b> ${last ? new Date(last.time).toLocaleString("vi-VN") : "N/A"}</p>`;
-
+    // Update chi tiết
+    detailsContent.innerHTML =
+      `<p><b>Mã:</b> ${currentCode}</p>
+       <p><b>Giá hiện tại:</b> ${last ? last.price.toFixed(2) : "N/A"}</p>
+       <p><b>% thay đổi:</b> <span style="color:${color};font-weight:bold;">${change}</span></p>
+       <p><b>Thời gian:</b> ${last ? new Date(last.time).toLocaleString("vi-VN") : "N/A"}</p>`;
   }
-
-
 };
-
 
 
 const searchBox = document.getElementById("searchBox");
@@ -286,4 +287,3 @@ removeCompanyBtn.onclick = () => {
 
 </script>
 </body>
-</html>
