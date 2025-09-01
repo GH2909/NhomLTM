@@ -32,7 +32,11 @@
   <div class="col" id="companyList">
     <h2>Danh mục công ty</h2>
     <input type="text" id="searchBox" placeholder="Tìm mã cổ phiếu..." style="width:100%;padding:6px;margin-bottom:10px;">
-    <button id="addCompanyBtn" style="display:none;">+ Thêm công ty</button>
+    <div style="display:flex; gap:10px; margin-bottom:10px;">
+      <button id="addCompanyBtn" style="display:none;">+ Thêm công ty</button>
+      <button id="removeCompanyBtn" style="display:none;">- Xóa công ty</button>
+    </div>
+
     <ul id="companyUl"></ul>
   </div>
 
@@ -83,16 +87,19 @@ logoutBtn.onclick = () => auth.signOut();
 
 auth.onAuthStateChanged(user => {
   if (user) {
-    status.innerText = `Xin chào, ${user.displayName}`;
-    loginBtn.style.display = "none";
-    logoutBtn.style.display = "inline-block";
-    addCompanyBtn.style.display = "block";
-  } else {
-    status.innerText = "Bạn chưa đăng nhập";
-    loginBtn.style.display = "inline-block";
-    logoutBtn.style.display = "none";
-    addCompanyBtn.style.display = "none";
-  }
+  status.innerText = `Xin chào, ${user.displayName}`;
+  loginBtn.style.display = "none";
+  logoutBtn.style.display = "inline-block";
+  addCompanyBtn.style.display = "block";
+  removeCompanyBtn.style.display = "block";   // hiện nút xóa
+} else {
+  status.innerText = "Bạn chưa đăng nhập";
+  loginBtn.style.display = "inline-block";
+  logoutBtn.style.display = "none";
+  addCompanyBtn.style.display = "none";
+  removeCompanyBtn.style.display = "none";   // ẩn nút xóa
+}
+
 });
 
 function renderSummaryTable() {
@@ -140,24 +147,25 @@ ws.onmessage = event => {
   // Trong ws.onmessage
 if (currentCode) {
   const d = history[currentCode] || [];
-  chart.data.labels = d.map(x => new Date(x.time).toLocaleTimeString());
-  chart.data.datasets[0].data = d.map(x => x.price);
-  chart.data.datasets[0].label = `Giá cổ phiếu ${currentCode}`;
-  chart.update();
+  const prices = d.map(x => x.price);
+const last = d[d.length - 1];
+const prev = d.length >= 2 ? d[d.length - 2].price : null;
 
-  // Lấy phần tử cuối (mới nhất)
-  const last = d[d.length - 1];
-  const prev = d.length >= 2 ? d[d.length - 2].price : null;
-let change = "N/A";
-let color = "black";
+let colorS = "black";
 if (last && prev) {
-  const percent = ((last.price - prev) / prev) * 100;
-  change = percent.toFixed(2) + "%";
-  color = percent >= 0 ? "green" : "red";
+  colorS = last.price >= prev ? "green" : "red";
 }
 
+chart.data.labels = d.map(x => new Date(x.time).toLocaleTimeString());
+chart.data.datasets[0].data = prices;
+chart.data.datasets[0].label = `Giá cổ phiếu ${currentCode}`;
+chart.data.datasets[0].borderColor = colorS;
+chart.data.datasets[0].backgroundColor = colorS;
+chart.update();
+
+
 detailsContent.innerHTML =
-  `<p><b>Mã:</b> ${code}</p>
+  `<p><b>Mã:</b> ${currentCode}</p>
    <p><b>Giá hiện tại:</b> ${last ? last.price.toFixed(2) : "N/A"}</p>
    <p><b>% thay đổi:</b> <span style="color:${color};font-weight:bold;">${change}</span></p>
    <p><b>Thời gian:</b> ${last ? new Date(last.time).toLocaleString("vi-VN") : "N/A"}</p>`;
@@ -264,6 +272,17 @@ addCompanyBtn.onclick = () => {
     ws.send(JSON.stringify({ action: "add", code, price: parseFloat(price) }));
   }
 };
+
+const removeCompanyBtn = document.getElementById("removeCompanyBtn");
+
+// Xóa công ty (demo, chỉ gửi lên server)
+removeCompanyBtn.onclick = () => {
+  const code = prompt("Nhập mã công ty cần xóa:");
+  if (code) {
+    ws.send(JSON.stringify({ action: "delete", code }));
+  }
+};
+
 
 </script>
 </body>

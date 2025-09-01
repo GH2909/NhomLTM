@@ -46,4 +46,4 @@ wss.on("connection", (ws) => {
   });
 });
 
-console.log("Bridge running at ws://localhost:8080");
+console.log("Bridge running at ws://localhost:3000");

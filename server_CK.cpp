@@ -61,6 +61,7 @@ void updatePrices() {
         if (s.history.size() > 20) s.history.erase(s.history.begin());
     }
 }
+
 std::string generateJSON() {
     std::lock_guard<std::mutex> lock(mtx);
     std::ostringstream ss;
@@ -123,6 +124,20 @@ void runServer() {
                         std::cout << "Added stock: " << code << "\n";
                     }
                 }
+                if(msg.find("\"action\":\"delete\"")!=std::string::npos){
+                size_t c1 = msg.find("\"code\":\"")+8;
+                size_t c2 = msg.find("\"",c1);
+                std::string code = msg.substr(c1,c2-c1);
+
+                std::lock_guard<std::mutex> lock(mtx);
+                auto it = std::remove_if(stocks.begin(), stocks.end(),
+                                         [&](const Stock& s){ return s.code==code; });
+                    if(it != stocks.end()){
+                        stocks.erase(it, stocks.end());
+                        std::cout << "Deleted stock: " << code << "\n";
+                    }
+                }
+             
             }
         }
     }).detach();
